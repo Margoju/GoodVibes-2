@@ -655,6 +655,8 @@ def main():
                         help="Concentration (mol/l) (default 1 atm)")
     parser.add_argument("--ti", dest="temperature_interval", default=False, metavar="TI",
                         help="Initial temp, final temp, step size (K)")
+    parser.add_argument("--symmbyhand", dest="symmbyhand", type=str, default=False, metavar="symmbyhand",
+                        help="Indicates symmetry by hand (default False)")  
     parser.add_argument("--random", dest="random_value", default=False, metavar="RAND",
                         help="Frequency border, frequency range, number of files (default False)")
     parser.add_argument("-v", dest="freq_scale_factor", default=False, type=float, metavar="SCALE_FACTOR",
@@ -986,6 +988,9 @@ def main():
     # Solvent correction message
     if options.media:
         log.write("\n   Applying standard concentration correction (based on density at 20C) to solvent media.")
+    # Symmetry adding message
+    if options.symmbyhand:
+        log.write("\n   Adding symmetry by user for each molecule using file name")
 
     # Check for special options
     inverted_freqs, inverted_files = [], []
@@ -1037,7 +1042,7 @@ def main():
                 density = solvents[options.media.lower()][1]
                 conc = (density * 1000) / mweight
                 media_conc = conc
-        bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, options.temperature, 0, 0, 0, 0,
+        bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, options.temperature, 0, 0, 0, 0, options.symmbyhand,
                        conc, options.freq_scale_factor, options.freespace, options.spc, options.invert,
                        d3_energy, cosmo=cosmo_option, ssymm=ssymm_option, mm_freq_scale_factor=vmm_option, inertia=options.inertia, g4=options.g4)
 
@@ -1071,7 +1076,8 @@ def main():
     if options.imag_freq is True: stars += '*' * 9
     if options.boltz is True: stars += '*' * 7
     if options.ssymm is True: stars += '*' * 13
-
+    if options.symmbyhand is not False: stars += '*' * 13
+    
     # Standard mode: tabulate thermochemistry ouput from file(s) at a single temperature and concentration
     if options.temperature_interval is False and options.random_value is False:
         if options.spc is False:
@@ -1100,7 +1106,7 @@ def main():
             log.write('{:>7}'.format("Boltz"), thermodata=True)
         if options.imag_freq is True:
             log.write('{:>9}'.format("im freq"), thermodata=True)
-        if options.ssymm:
+        if options.ssymm or options.symmbyhand:
             log.write('{:>13}'.format("Point Group"), thermodata=True)
         log.write("\n" + stars + "")
 
@@ -1205,7 +1211,7 @@ def main():
                 if options.imag_freq is True and hasattr(bbe, "im_frequency_wn"):
                     for freq in bbe.im_frequency_wn:
                         log.write('{:9.2f}'.format(freq), thermodata=True)
-                if options.ssymm:
+                if options.ssymm or options.symmbyhand:
                     if hasattr(bbe, "qh_gibbs_free_energy"):
                         log.write('{:>13}'.format(bbe.point_group))
                     else:
@@ -1284,12 +1290,12 @@ def main():
                 interval_bbe_data[h].append(bbe)
                 linear_warning.append(bbe.linear_warning) 
                 if rand == 0:
-                    bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, options.temperature, 0, 0, num_files, rand, 
+                    bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, options.temperature, 0, 0, num_files, rand, options.symmbyhand, 
                                    conc, options.freq_scale_factor, options.freespace, options.spc, options.invert,
                                    0.0, cosmo=cosmo_option, inertia=options.inertia, g4=options.g4)
                     interval_bbe_data[h].append(bbe)
                 else:
-                    bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, options.temperature, value_up, freq_range, num_files, rand, 
+                    bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, options.temperature, value_up, freq_range, num_files, rand, options.symmbyhand, 
                                    conc, options.freq_scale_factor, options.freespace, options.spc, options.invert,
                                    0.0, cosmo=cosmo_option, inertia=options.inertia, g4=options.g4)
                     interval_bbe_data[h].append(bbe)
@@ -1399,7 +1405,7 @@ def main():
                     cosmo_option = gsolv_dicts[i][file]
                 if options.cosmo_int is False:
                     # haven't implemented D3 for this option
-                    bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, temp, value_up, freq_range, 0, 0,
+                    bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, temp, value_up, freq_range, 0, 0, options.symmbyhand, 
                                    conc, options.freq_scale_factor, options.freespace, options.spc, options.invert,
                                    0.0, cosmo=cosmo_option, inertia=options.inertia, g4=options.g4)
                 interval_bbe_data[h].append(bbe)
