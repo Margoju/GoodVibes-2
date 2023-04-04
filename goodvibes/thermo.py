@@ -548,7 +548,7 @@ class calc_bbe:
                         symmno = int((line.strip().split()[3]).split(".")[0])
                 # Grab point group
                 elif line.strip().startswith('Full point group'):
-                    self.point_group = line.strip().split()[3]
+                    self.point_group = line.strip().split()[3].lower().capitalize()
                     if line.strip().split()[3] == 'D*H' or line.strip().split()[3] == 'C*V':
                         linear_mol = 1
                 # Grab rotational constants
@@ -630,7 +630,7 @@ class calc_bbe:
                         symmno = int(line.strip().split()[-1][0:-1])
                 # Grab point group
                 elif line.strip().find('symmetry detected') != -1:
-                    self.point_group = line.strip().split()[0]
+                    self.point_group = line.strip().split()[0].lower().capitalize()
                     if line.strip().split()[0] == 'D*H' or line.strip().split()[0] == 'C*V':
                         linear_mol = 1
                 # Grab rotational constants (convert cm-1 to GHz)
@@ -749,7 +749,7 @@ class calc_bbe:
                 elif line.strip().startswith('Point Group:'):
                     if not ssymm:
                         symmno = int((line.strip().split()[5]))
-                        self.point_group = line.strip().split()[2][:-1]
+                        self.point_group = line.strip().split()[2][:-1].lower().capitalize()
                         if line.strip().split()[2] == 'Dinfh' or line.strip().split()[2] == 'Cinfv':
                             linear_mol = 1
                 # Grab rotational constants
