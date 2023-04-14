@@ -655,9 +655,9 @@ def main():
                         help="Concentration (mol/l) (default 1 atm)")
     parser.add_argument("--ti", dest="temperature_interval", default=False, metavar="TI",
                         help="Initial temp, final temp, step size (K)")
-    parser.add_argument("--symmbyhand", dest="symmbyhand", type=str, default=False, metavar="symmbyhand",
+    parser.add_argument("--symmbyhand", dest="symmbyhand", action="store_true", default=False, 
                         help="Indicates symmetry by hand (default False)")  
-    parser.add_argument("--random", dest="random_value", default=False, metavar="RAND",
+    parser.add_argument("--random", dest="random_value", default=False, metavar="RAND", type = str,
                         help="Frequency border, frequency range, number of files (default False)")
     parser.add_argument("-v", dest="freq_scale_factor", default=False, type=float, metavar="SCALE_FACTOR",
                         help="Frequency scaling factor. If not set, try to find a suitable value in database. "
@@ -1077,6 +1077,7 @@ def main():
     if options.boltz is True: stars += '*' * 7
     if options.ssymm is True: stars += '*' * 13
     if options.symmbyhand is not False: stars += '*' * 13
+    if options.random_value is not False: stars += '*' * 14
     
     # Standard mode: tabulate thermochemistry ouput from file(s) at a single temperature and concentration
     if options.temperature_interval is False and options.random_value is False:
@@ -1242,7 +1243,9 @@ def main():
         log.write("\n\n   Variable-Frequency analysis of the enthalpy and entropy")
         if options.cosmo_int is False:
             # If no random times was defined, divide the region into 10
-            random_value = [float(val) for val in options.random_value.split(',')]
+            random_value = [val for val in options.random_value.split(',')]
+            if len(random_value) != 3: 
+                log.write("Key --random contains much or few quantity of numbers")
             value_up = float(random_value[0])
             freq_range = float(random_value[1])
             num_files = int(random_value[2])
@@ -1253,7 +1256,7 @@ def main():
             log.write("This opportunity is not implemented yet ...")
             
         if options.QH:
-            qh_print_format = "\n\n   {:<25} {:>13} {:>13} {:>10} {:>13} {:>13} {:>10} {:>10} {:>13} {:>13}"
+            qh_print_format = "\n\n   {:<39} {:>13} {:>13} {:>10} {:>13} {:>13} {:>10} {:>10} {:>13} {:>13}"
             if options.spc and options.cosmo_int:
                 log.write(qh_print_format.format("Structure", "Try", "E", "ZPE", "H_SPC", "qh-H_SPC", "T.S", "T.qh-S",
                                                  "G(T)_SPC", "COSMO-RS-qh-G(T)_SPC"), thermodata=True)
@@ -1267,7 +1270,7 @@ def main():
                 log.write(qh_print_format.format("Structure", "Try", "E", "ZPE", "H", "qh-H", "T.S", "T.qh-S", "G(T)",
                                                  "qh-G(T)"), thermodata=True)
         else:
-            print_format_3 = "\n\n  {:<26} {:>13} {:>13} {:>10} {:>13} {:>10} {:>10} {:>13} {:>13}"
+            print_format_3 = "\n\n  {:<40} {:>13} {:>13} {:>10} {:>13} {:>10} {:>10} {:>13} {:>13}"
             if options.spc and options.cosmo_int:
                 log.write(print_format_3.format("Structure", "Try", "E", "ZPE", "H_SPC", "T.S", "T.qh-S", "G(T)_SPC",
                                                 "COSMO-RS-qh-G(T)_SPC"), thermodata=True)
@@ -1280,6 +1283,8 @@ def main():
             else:
                 log.write(print_format_3.format("Structure", "Try", "E", "ZPE", "H", "T.S", "T.qh-S", "G(T)", "qh-G(T)"),
                           thermodata=True)
+        if options.ssymm or options.symmbyhand:
+            log.write('{:>13}'.format("Point Group"), thermodata=True)
 
         for h, file in enumerate(files):        # Random interval
             log.write("\n" + stars)
@@ -1314,7 +1319,7 @@ def main():
                         log.write("Warning! Couldn't find frequency information ...")
                     else:
                         log.write("\no  ")
-                        log.write('{:<15} {:22}'.format(os.path.splitext(os.path.basename(file))[0], int(rand)), 
+                        log.write('{:<39} {:12}'.format(os.path.splitext(os.path.basename(file))[0], int(rand)), 
                                   thermodata=True)
                         # if not options.media:
                         if all(getattr(bbe, attrib) for attrib in
@@ -1343,6 +1348,11 @@ def main():
                         if options.media is not False and options.media.lower() in solvents and options.media.lower() == \
                                 os.path.splitext(os.path.basename(file))[0].lower():
                             log.write("  Solvent: {:4.2f}M ".format(media_conc))
+                if options.ssymm or options.symmbyhand:
+                    if hasattr(bbe, "qh_gibbs_free_energy"):
+                        log.write('{:>13}'.format(bbe.point_group))
+                    else:
+                        log.write('{:>37}'.format('---'))
             log.write("\n" + stars + "\n")
     # Running a variable temperature analysis of the enthalpy, entropy and the free energy
     elif options.temperature_interval:
