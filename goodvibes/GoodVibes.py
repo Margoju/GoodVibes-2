@@ -1294,12 +1294,12 @@ def main():
                 if rand == 0:
                     bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, options.temperature, 0, 0, num_files, rand, options.symmbyhand, 
                                    conc, options.freq_scale_factor, options.freespace, options.spc, options.invert,
-                                   0.0, cosmo=cosmo_option, inertia=options.inertia, g4=options.g4)
+                                   0.0, cosmo=cosmo_option, inertia=options.inertia, g4=options.g4, glowfreq=options.glowfreq)
                     interval_bbe_data[h].append(bbe)
                 else:
                     bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, options.temperature, value_up, freq_range, num_files, rand, options.symmbyhand, 
                                    conc, options.freq_scale_factor, options.freespace, options.spc, options.invert,
-                                   0.0, cosmo=cosmo_option, inertia=options.inertia, g4=options.g4)
+                                   0.0, cosmo=cosmo_option, inertia=options.inertia, g4=options.g4, glowfreq=options.glowfreq)
                     interval_bbe_data[h].append(bbe)
                 if linear_warning == [['Warning! Potential invalid calculation of linear molecule from Gaussian.']]:
                     log.write("\nx  ")
