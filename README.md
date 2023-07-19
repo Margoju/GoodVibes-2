@@ -13,6 +13,7 @@ The second type of quasi-harmonic approximation available is applied to the vibr
 
 ```python
 python -m goodvibes [-q] [--qs grimme/truhlar] [--qh] [-f cutoff_freq] [--fs S_cutoff_freq] [--fh H_cutoff_freq]
+[--symmbyhand] [--random 'cutoff_value, spread_range, number_of_steps']
 [--check] [-t temperature] [-c concentration] [--ti 't_initial, t_final, step'] [--ee] [--bav "global" or "conf"]
 [--cosmo cosmo_filename] [--cosmoint cosmo_filename,initial_temp,final_temp] [-v frequency_scale_factor]
 [--vmm mm_freq_scale_factor][--ssymm] [--spc link/filename] [--boltz] [--dup][--pes pes_yaml] [--nogconf]
@@ -20,7 +21,7 @@ python -m goodvibes [-q] [--qs grimme/truhlar] [--qh] [-f cutoff_freq] [--fs S_c
 [--media solvent_name] [--xyz] [--csv] [--custom_ext file_extension] <output_file(s)>
 ```
 *  The `--symmbyhand` option takes a file naming pattern (such as `"*_symm..."`) with files named as structure_C1.log, structure_D4h.out, and will use symmetry number corresponding to the symmetry from name of file for the system.
-*  The `--random` option цшдд simulate the spread of low frequencies of the molecule. Usage is `--random cutoff_value,spread_range,number_of_steps`. 
+*  The `--random` option will simulate the spread of low frequencies of the molecule. Usage is `--random cutoff_value, spread_range, number_of_steps`. 
 *	The `-h` option gives help by listing all available options, default values and units, and proper usage.
 *  The `-q` option turns on quasi-harmonic corrections to both entropy and enthalpy, defaulting to the Grimme method for entropy and the Head-Gordon enthalpy correction.
 *	The `--qs` option selects the approximation for the quasi-harmonic entropic correction: `--qs truhlar` or `--qs grimme` request the options explained above. Both avoid the tendency of RRHO vibrational entropies towards infinite values for low frequencies. If not specified this defaults to Grimme's expression.
