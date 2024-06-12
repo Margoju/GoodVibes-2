@@ -239,6 +239,7 @@ def calc_rotational_entropy(zpe, linear, symmno, rotemp, temperature):
         if len(rotemp) == 1:  # Diatomic or linear molecules
             linear = 1
             qrot = temperature / rotemp[0]
+            #исправить для орки
         elif len(rotemp) == 2:  # Possible gaussian problem with linear triatomic
             linear = 2
         else:
@@ -774,7 +775,7 @@ class calc_bbe:
                     if not ssymm:
                         symmno = int((line.strip().split()[5]))
                         self.point_group = line.strip().split()[2][:-1].lower().capitalize()
-                        if line.strip().split()[2] == 'Dinfh' or line.strip().split()[2] == 'Cinfv':
+                        if line.strip().split()[2][:-1] == 'Dinfh' or line.strip().split()[2][:-1] == 'Cinfv':
                             linear_mol = 1
                 # Grab rotational constants
                 elif line.strip().startswith('Rotational constants in MHz :'): #(GHZ was before)
@@ -793,6 +794,9 @@ class calc_bbe:
                         rotemp = [float(line.strip().split()[4])*PLANCK_CONSTANT*SPEED_OF_LIGHT/(BOLTZMANN_CONSTANT), 
                                   float(line.strip().split()[5])*PLANCK_CONSTANT*SPEED_OF_LIGHT/(BOLTZMANN_CONSTANT),
                                   float(line.strip().split()[6])*PLANCK_CONSTANT*SPEED_OF_LIGHT/(BOLTZMANN_CONSTANT)]
+                        if linear_mol == 1:
+                            rotemp.remove(0)
+                            rotemp = list(set(rotemp))
                     except ValueError:
                         rotemp = None
                 if "TOTAL RUN TIME:" in line.strip():
@@ -802,6 +806,7 @@ class calc_bbe:
                     secs = int(line.split()[9])
                     msecs = int(float(line.split()[11]))
                     self.cpu = [days, hours, mins, secs, msecs]
+            # надо расписать, для линейной или нелинейной системы
             frequency_wn = frequency_wn[-int(3*number_of_atoms-6):]
             
         self.inverted_freqs = inverted_freqs
@@ -814,7 +819,6 @@ class calc_bbe:
                     point_group = n[4:].lower().capitalize()
                     symmno = pg_sm.get(point_group)
                     self.point_group = point_group
-
         # Skip the calculation if unable to parse the frequencies or zpe from the output file
         if hasattr(self, "zero_point_corr") and rotemp:
             cutoffs = [s_freq_cutoff for freq in frequency_wn]
@@ -823,7 +827,6 @@ class calc_bbe:
             u_trans = calc_translational_energy(temperature)
             s_trans = calc_translational_entropy(molecular_mass, conc, temperature, solv)
             s_elec = calc_electronic_entropy(self.mult)
-            print("LEN", len(frequency_wn))
             # Rotational and Vibrational contributions to the energy entropy
             if len(frequency_wn) > 0:
                 if value_up > 0:
@@ -834,6 +837,7 @@ class calc_bbe:
                 u_rot = calc_rotational_energy(self.zero_point_corr, symmno, temperature, linear_mol)
                 u_vib = calc_vibrational_energy(frequency_wn, temperature, freq_scale_factor, fract_modelsys)
                 s_rot = calc_rotational_entropy(self.zero_point_corr, linear_mol, symmno, rotemp, temperature)
+                
                 if NoRot:
                     u_rot = 0.0
                     s_rot = 0.0
