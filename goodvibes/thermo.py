@@ -239,7 +239,6 @@ def calc_rotational_entropy(zpe, linear, symmno, rotemp, temperature):
         if len(rotemp) == 1:  # Diatomic or linear molecules
             linear = 1
             qrot = temperature / rotemp[0]
-            #исправить для орки
         elif len(rotemp) == 2:  # Possible gaussian problem with linear triatomic
             linear = 2
         else:
@@ -652,7 +651,6 @@ class calc_bbe:
                     secs = line.strip().split()[3][0:-1]
                     msecs = 0
                     self.cpu = [days,hours,mins,secs,msecs]
-
         if glowfreq != '':
             frequency_wn = []
             if not os.path.exists(f'{glowfreq}.MECPprop'):
@@ -677,28 +675,31 @@ class calc_bbe:
         # ORCA file
         if self.sp_program == 'Orca' or self.program == 'Orca':
             # Count number of links
-            for line in g_output:
+            f_iter = 0
+            for i, line in enumerate(g_output):
                 # Only read first link + freq not other link jobs
                 if "ORCA TERMINATED NORMALLY" in line:
                     linkmax += 1
                 else:
                     frequency_wn = []
-                if 'freq. ' in line:
+                if len(re.findall('VIBRATIONAL FREQUENCIES', line)) > 0:
                     freqloc = linkmax
-
+                    f_iter = i
             # Iterate over output
             if freqloc == 0:
                 freqloc = len(g_output)
-            for i, line in enumerate(g_output):
+
+            for line in g_output:
                 # Link counter
                 if "ORCA TERMINATED NORMALLY" in line:
                     link += 1
-                    # Reset frequencies if in final freq link
+                   # Reset frequencies if in final freq link
                     if link == freqloc:
                         frequency_wn = []
                         im_frequency_wn = []
                         if mm_freq_scale_factor is not False:
                             fract_modelsys = []
+                
                 # If spc specified will take last Energy from file, otherwise will break after freq calc
                 if not g4:
                     if link > freqloc:
@@ -726,8 +727,20 @@ class calc_bbe:
                                 im_frequency_wn.append(x)
                         else:
                             im_frequency_wn.append(x)
+                                # Grab Multiplicity
+                
+                if 'Multiplicity' in line.strip():
+                    try:
+                        self.mult = int(line.strip().split()[3])
+                    except:
+                        self.mult = int(line.split()[3])
+                # For QM calculations look for SCF energies, last one will be the optimized energy
+                elif line.strip().startswith('FINAL SINGLE POINT ENERGY'):
+                    self.scf_energy = float(line.strip().split()[4])
+                            
+            for i, line in enumerate(g_output[f_iter:]):                
                 # Iterate over output: look out for low frequencies
-                if line.strip().startswith('freq.'):
+                if len(re.findall('\d+ cm\*\*-1*', line)) > 0:
                     if mm_freq_scale_factor is not False:
                         newline = g_output[i + 3]
                     all_freqs = []
@@ -753,23 +766,14 @@ class calc_bbe:
                                 if mm_freq_scale_factor is not False: fract_modelsys.append(y)
                         except IndexError:
                             pass
-                # For QM calculations look for SCF energies, last one will be the optimized energy
-                elif line.strip().startswith('FINAL SINGLE POINT ENERGY'):
-                    self.scf_energy = float(line.strip().split()[4])
                 # Look for thermal corrections, paying attention to point group symmetry
                 elif line.strip().startswith('Zero point energy'):
                     self.zero_point_corr = float(line.strip().split()[4])
-                # Grab Multiplicity
-                elif 'Multiplicity' in line.strip():
-                    try:
-                        self.mult = int(line.strip().split()[3])
-                    except:
-                        self.mult = int(line.split()[3])
                 # Grab molecular mass
                 elif line.strip().startswith('Total Mass'):
                     molecular_mass = float(line.strip().split()[3])
                 elif line.strip().startswith('Number of atoms'):
-                    number_of_atoms = float(line.strip().split()[-1])                    
+                    number_of_atoms = float(line.strip().split()[-1])
                 # Grab rational symmetry number
                 elif line.strip().startswith('Point Group:'):
                     if not ssymm:
@@ -806,11 +810,7 @@ class calc_bbe:
                     secs = int(line.split()[9])
                     msecs = int(float(line.split()[11]))
                     self.cpu = [days, hours, mins, secs, msecs]
-            # надо расписать, для линейной или нелинейной системы
-            frequency_wn = frequency_wn[-int(3*number_of_atoms-6):]
-            
         self.inverted_freqs = inverted_freqs
-
         if symmbyhand:
             name, ext = os.path.splitext(file)
             nam = name.split("_")
@@ -819,12 +819,12 @@ class calc_bbe:
                     point_group = n[4:].lower().capitalize()
                     symmno = pg_sm.get(point_group)
                     self.point_group = point_group
+
         # Skip the calculation if unable to parse the frequencies or zpe from the output file
         if hasattr(self, "zero_point_corr") and rotemp:
             cutoffs = [s_freq_cutoff for freq in frequency_wn]
-
             # Translational and electronic contributions to the energy and entropy do not depend on frequencies
-            u_trans = calc_translational_energy(temperature)
+            u_trans = calc_trot_energy(temperature)
             s_trans = calc_translational_entropy(molecular_mass, conc, temperature, solv)
             s_elec = calc_electronic_entropy(self.mult)
             # Rotational and Vibrational contributions to the energy entropy
@@ -837,7 +837,6 @@ class calc_bbe:
                 u_rot = calc_rotational_energy(self.zero_point_corr, symmno, temperature, linear_mol)
                 u_vib = calc_vibrational_energy(frequency_wn, temperature, freq_scale_factor, fract_modelsys)
                 s_rot = calc_rotational_entropy(self.zero_point_corr, linear_mol, symmno, rotemp, temperature)
-                
                 if NoRot:
                     u_rot = 0.0
                     s_rot = 0.0
