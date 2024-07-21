@@ -824,7 +824,7 @@ class calc_bbe:
         if hasattr(self, "zero_point_corr") and rotemp:
             cutoffs = [s_freq_cutoff for freq in frequency_wn]
             # Translational and electronic contributions to the energy and entropy do not depend on frequencies
-            u_trans = calc_rot_energy(temperature)
+            u_trans = calc_translational_energy(temperature)
             s_trans = calc_translational_entropy(molecular_mass, conc, temperature, solv)
             s_elec = calc_electronic_entropy(self.mult)
             # Rotational and Vibrational contributions to the energy entropy
