@@ -688,8 +688,10 @@ def main():
                         help="Print imaginary frequencies (default False)")
     parser.add_argument("--invertifreq", dest="invert", nargs='?', const=True, default=False,
                         help="Make low lying imaginary frequencies positive")
-    parser.add_argument("--freespace", dest="freespace", default="none", type=str, metavar="FREESPACE",
-                        help="Solvent (H2O, toluene, DMF, AcOH, chloroform) (default none)")
+    parser.add_argument("--freespace", nargs='?', default="none", const="none", type=str,
+                        help="Solvent (H2O, toluene, DMF, AcOH, chloroform) (default none) – ignored if --custom-solvent")
+    parser.add_argument("--custom-solvent", nargs=2, type=float, metavar=('MOLARITY', 'MOLVOL'),
+                        help='Use custom solvent: provide molarity (mol/l) and molecular volume (Å³)')
     parser.add_argument("--dup", dest="duplicate", action="store_true", default=False,
                         help="Remove possible duplicates from thermochemical analysis")
     parser.add_argument("--cosmo", dest="cosmo", default=False, metavar="COSMO-RS",
@@ -907,7 +909,7 @@ def main():
             log.write("\n\n   Using vibrational scale factor {}: differing levels of theory "
                       "detected.".format(options.freq_scale_factor))
     # Checks to see whether the available free space of a requested solvent is defined
-    freespace = get_free_space(options.freespace)
+    freespace = get_free_space(options.freespace, options.custom_solvent)
     if freespace != 1000.0:
         log.write("\n   Specified solvent " + options.freespace + ": free volume " + str(
             "%.3f" % (freespace / 10.0)) + " (mol/l) corrects the translational entropy")
@@ -1040,13 +1042,12 @@ def main():
                 from .media import solvents
             except:
                 from media import solvents
-            if options.media.lower() in solvents and options.media.lower() == \
-                    os.path.splitext(os.path.basename(file))[0].lower():
+            if options.media.lower() in solvents and options.media.lower() == os.path.splitext(os.path.basename(file))[0].lower():
                 mweight = solvents[options.media.lower()][0]
                 density = solvents[options.media.lower()][1]
                 conc = (density * 1000) / mweight
                 media_conc = conc
-        bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, options.temperature, 0, 0, 0, 0, options.symmbyhand, options.norot,
+        bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, options.temperature, 0, 0, 0, 0, options.symmbyhand, options.norot, options.custom_solvent,
                        conc, options.freq_scale_factor, options.freespace, options.spc, options.invert,
                        d3_energy, cosmo=cosmo_option, ssymm=ssymm_option, mm_freq_scale_factor=vmm_option, 
                        inertia=options.inertia, g4=options.g4, glowfreq=options.glowfreq)
@@ -1300,12 +1301,12 @@ def main():
                 interval_bbe_data[h].append(bbe)
                 linear_warning.append(bbe.linear_warning) 
                 if rand == 0:
-                    bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, options.temperature, 0, 0, num_files, rand, options.symmbyhand, options.norot, 
+                    bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, options.temperature, 0, 0, num_files, rand, options.symmbyhand, options.norot, options.custom_solvent,
                                    conc, options.freq_scale_factor, options.freespace, options.spc, options.invert,
                                    0.0, cosmo=cosmo_option, inertia=options.inertia, g4=options.g4, glowfreq=options.glowfreq)
                     interval_bbe_data[h].append(bbe)
                 else:
-                    bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, options.temperature, value_up, freq_range, num_files, rand, options.symmbyhand,options.norot, 
+                    bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, options.temperature, value_up, freq_range, num_files, rand, options.symmbyhand,options.norot, options.custom_solvent,
                                    conc, options.freq_scale_factor, options.freespace, options.spc, options.invert,
                                    0.0, cosmo=cosmo_option, inertia=options.inertia, g4=options.g4, glowfreq=options.glowfreq)
                     interval_bbe_data[h].append(bbe)
@@ -1420,7 +1421,7 @@ def main():
                     cosmo_option = gsolv_dicts[i][file]
                 if options.cosmo_int is False:
                     # haven't implemented D3 for this option
-                    bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, temp, value_up, freq_range, 0, 0, options.symmbyhand, options.norot, 
+                    bbe = calc_bbe(file, options.QS, options.QH, options.S_freq_cutoff, options.H_freq_cutoff, temp, value_up, freq_range, 0, 0, options.symmbyhand, options.norot, options.custom_solvent,
                                    conc, options.freq_scale_factor, options.freespace, options.spc, options.invert,
                                    0.0, cosmo=cosmo_option, inertia=options.inertia, g4=options.g4, glowfreq=options.glowfreq)
                 interval_bbe_data[h].append(bbe)

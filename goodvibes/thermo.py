@@ -144,7 +144,7 @@ def calc_zeropoint_energy(frequency_wn, freq_scale_factor, fract_modelsys):
     energy = [0.5 * entry * GAS_CONSTANT for entry in factor]
     return sum(energy)
 
-def get_free_space(solv):
+def get_free_space(solv, custom_solvent):
     """
     Computed the amount of accessible free space (ml per L) in solution.
 
@@ -163,21 +163,49 @@ def get_free_space(solv):
     solvent_list = ["none", "H2O", "toluene", "DMF", "AcOH", "chloroform"]
     molarity = [1.0, 55.6, 9.4, 12.9, 17.4, 12.5]  # mol/l
     molecular_vol = [1.0, 27.944, 149.070, 77.442, 86.10, 97.0]  # Angstrom^3
-
-    nsolv = 0
+    print(custom_solvent)
+    #nsolv = 0
     for i in range(0, len(solvent_list)):
         if solv == solvent_list[i]:
             nsolv = i
-    solv_molarity = molarity[nsolv]
-    solv_volume = molecular_vol[nsolv]
-    if nsolv > 0:
-        v_free = 8 * ((1E27 / (solv_molarity * AVOGADRO_CONSTANT)) ** 0.333333 - solv_volume ** 0.333333) ** 3
-        freespace = v_free * solv_molarity * AVOGADRO_CONSTANT * 1E-24
+    if custom_solvent is not None:
+        solv_molarity, solv_volume = custom_solvent[0], custom_solvent[1]
+        print(solv_molarity, solv_volume)
     else:
+        try:
+            nsolv = solvent_list.index(solv)
+        except ValueError:
+            nsolv = 0
+        solv_molarity = molarity[nsolv]
+        solv_volume = molecular_vol[nsolv]
+    #if custom_solvent:
+    #    solv_molarity = user_molarity
+    #    solv_volume = user_molvol
+    #else:
+        #solv_molarity = molarity[nsolv]
+        #solv_volume = molecular_vol[nsolv]
+        #try:
+        #    nsolv = solvent_list.index(solv)
+        #except ValueError:
+        #    nsolv = 0
+        #solv_molarity = molarity[nsolv]
+        #solv_volume = molecular_vol[nsolv]
+    if (custom_solvent is None and solv == "none"):
         freespace = 1000.0
+    else:
+        v_free = 8 * ((1E27 / (solv_molarity * AVOGADRO_CONSTANT)) ** (1/3) - solv_volume ** (1/3)) ** 3
+        freespace = v_free * solv_molarity * AVOGADRO_CONSTANT * 1E-24
+        
+    print("\n\n", custom_solvent, solv_molarity, solv_volume, freespace)
+    #if nsolv > 0:
+    #if solv != "none" or custom_solvent:
+    #    v_free = 8 * ((1E27 / (solv_molarity * AVOGADRO_CONSTANT)) ** 0.333333 - solv_volume ** 0.333333) ** 3
+    #    freespace = v_free * solv_molarity * AVOGADRO_CONSTANT * 1E-24
+    #else:
+    #    freespace = 1000.0
     return freespace
 
-def calc_translational_entropy(molecular_mass, conc, temperature, solv):
+def calc_translational_entropy(molecular_mass, conc, temperature, solv, custom_solvent):
     """
     Translational entropy evaluation.
 
@@ -195,7 +223,7 @@ def calc_translational_entropy(molecular_mass, conc, temperature, solv):
     float: translational entropy of chemical system.
     """
     lmda = ((2.0 * math.pi * molecular_mass * AMU_to_KG * BOLTZMANN_CONSTANT * temperature) ** 0.5) / PLANCK_CONSTANT
-    freespace = get_free_space(solv)
+    freespace = get_free_space(solv, custom_solvent)
     ndens = conc * 1000 * AVOGADRO_CONSTANT / (freespace / 1000.0)
     entropy = GAS_CONSTANT * (2.5 + math.log(lmda ** 3 / ndens))
     return entropy
@@ -395,7 +423,7 @@ class calc_bbe:
         cosmo_qhg (float): quasi-harmonic Gibbs free energy with COSMO-RS correction for Gibbs free energy of solvation
         linear_warning (bool): flag for linear molecules, may be missing a rotational constant.
     """
-    def __init__(self, file, QS, QH, s_freq_cutoff, H_FREQ_CUTOFF, temperature, value_up, freq_range, num_files, rand, symmbyhand, NoRot, conc, freq_scale_factor, solv, spc,
+    def __init__(self, file, QS, QH, s_freq_cutoff, H_FREQ_CUTOFF, temperature, value_up, freq_range, num_files, rand, symmbyhand, NoRot, custom_solvent, conc, freq_scale_factor, solv, spc,
                  invert, d3_term, ssymm=False, cosmo=None, mm_freq_scale_factor=False,inertia='global',g4=False, glowfreq=''):
         # List of frequencies and default values
         im_freq_cutoff, frequency_wn, im_frequency_wn, rotemp, roconst, linear_mol, link, freqloc, linkmax, symmno, self.cpu, inverted_freqs = 0.0, [], [], [
@@ -804,7 +832,7 @@ class calc_bbe:
 
             # Translational and electronic contributions to the energy and entropy do not depend on frequencies
             u_trans = calc_translational_energy(temperature)
-            s_trans = calc_translational_entropy(molecular_mass, conc, temperature, solv)
+            s_trans = calc_translational_entropy(molecular_mass, conc, temperature, solv, custom_solvent)
             s_elec = calc_electronic_entropy(self.mult)
             # Rotational and Vibrational contributions to the energy entropy
             if len(frequency_wn) > 0:
